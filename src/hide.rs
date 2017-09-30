@@ -3,7 +3,7 @@ use raster::Image;
 pub fn hide_in_image(mut image: Image, data: &[u8]) -> Image {
     let (width, height) = (image.width, image.height);
 
-    if data.len() > (width * height) as usize {
+    if data.len() > ((width * height) / 8) as usize {
         panic!("File to hide is too large!!");
     }
 

@@ -47,7 +47,7 @@ fn analyse(image_path: &str) -> ImageStats {
     ImageStats {
         width: image.width as usize,
         height: image.height as usize,
-        available_space: (image.width * image.height) as usize
+        available_space: ((image.width * image.height) / 8) as usize
     }
 }
 
