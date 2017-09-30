@@ -1,0 +1,7 @@
+[package]
+name = "steg"
+version = "0.1.0"
+authors = ["Lignum <me@lignum.pw>"]
+
+[dependencies]
+raster = "*"
