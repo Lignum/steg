@@ -1,76 +1,12 @@
 extern crate raster;
 
+mod extract;
+mod hide;
+
 use std::fs::File;
 use std::io::{Read, Write};
 use std::env;
 use std::error::Error;
-
-use raster::Image;
-
-fn hide_in_image(mut image: Image, data: &[u8]) -> Image {
-    let (width, height) = (image.width, image.height);
-
-    if data.len() > (width * height) as usize {
-        panic!("File to hide is too large!!");
-    }
-
-    let mut index = 0;
-    let mut bit = 0;
-
-    for y in 0..(height-1) {
-        for x in 0..(width-1) {
-            if index >= data.len() {
-                break;
-            }
-
-            let mut c = image.get_pixel(x, y).expect("Failed to get pixel");
-            let d = (data[index] >> bit) & 0x1;
-            c.r = c.r & !(1 << 0) | (d << 0);
-            image.set_pixel(x, y, c).expect("Failed to set pixel");
-
-            bit += 1;
-
-            if bit > 7 {
-                bit = 0;
-                index += 1;
-            }
-        }
-    }
-
-    image
-}
-
-fn extract_from_image(image: Image, length: usize) -> Vec<u8> {
-    let (width, height) = (image.width, image.height);
-    let mut data: Vec<u8> = vec![0; length];
-
-    let mut index = 0;
-    let mut bit = 0;
-
-    for y in 0..(height-1) {
-        for x in 0..(width-1) {
-            if index >= length {
-                break;
-            }
-
-            let c = image.get_pixel(x, y).expect("Failed to get pixel");
-            let d = c.r & 0x1;
-
-            if d > 0 {
-                data[index] |= 1 << bit;
-            }
-
-            bit += 1;
-
-            if bit > 7 {
-                bit = 0;
-                index += 1;
-            }
-        }
-    }
-
-    data
-}
 
 fn hide(image_path: &str, file_to_hide_path: &str, output_path: &str) -> Result<usize, std::io::Error> {
     let image = raster::open(image_path).expect("Failed to load image for hiding!");
@@ -86,14 +22,14 @@ fn hide(image_path: &str, file_to_hide_path: &str, output_path: &str) -> Result<
     };
 
     let length = data.len();
-    let image = hide_in_image(image, data.as_ref());
+    let image = hide::hide_in_image(image, data.as_ref());
     raster::save(&image, output_path).expect("Failed to save image with hidden data!");
     Ok(length)
 }
 
 fn extract(image_path: &str, length: usize, output_path: &str) -> Result<(), std::io::Error> {
     let image = raster::open(image_path).expect("Failed to load image for extraction!");
-    let mut data = extract_from_image(image, length);
+    let mut data = extract::extract_from_image(image, length);
 
     let mut file = File::create(output_path)?;
     file.write_all(&mut data)
