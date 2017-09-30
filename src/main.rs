@@ -35,15 +35,34 @@ fn extract(image_path: &str, length: usize, output_path: &str) -> Result<(), std
     file.write_all(&mut data)
 }
 
+struct ImageStats {
+    width: usize,
+    height: usize,
+    available_space: usize
+}
+
+fn analyse(image_path: &str) -> ImageStats {
+    let image = raster::open(image_path).expect("Failed to load image for analysing!");
+
+    ImageStats {
+        width: image.width as usize,
+        height: image.height as usize,
+        available_space: (image.width * image.height) as usize
+    }
+}
+
 fn print_usage(prog_name: &str) {
-    eprintln!("Usage: {} [extract <input file> <data size> <output file>]/[hide <image file> <data to hide> <output file>]", prog_name);
+    eprintln!("Usage: {} ..", prog_name);
+    eprintln!("\t.. hide [image file] [data file] [output file]");
+    eprintln!("\t.. extract [image file] [data size] [output file]");
+    eprintln!("\t.. analyse [image file]");
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let name = &args[0];
 
-    if args.len() < 3 {
+    if args.len() < 2 {
         print_usage(name);
         return;
     }
@@ -51,6 +70,11 @@ fn main() {
     let command = &args[1];
     match command.as_str() {
         "extract" => {
+            if args.len() < 5 {
+                print_usage(name);
+                return;
+            }
+
             let input_file = &args[2];
             let data_size = match args[3].parse() {
                 Ok(i) => i,
@@ -64,6 +88,11 @@ fn main() {
             }
         },
         "hide" => {
+            if args.len() < 5 {
+                print_usage(name);
+                return;
+            }
+
             let input_file = &args[2];
             let image_to_hide_file = &args[3];
             let output_file = &args[4];
@@ -72,6 +101,21 @@ fn main() {
                 Ok(len) => println!("Successfully hidden {} bytes of data", len),
                 Err(err) => eprintln!("Failed to hide data: {}", err.description())
             }
+        },
+        "analyse" => {
+            if args.len() < 3 {
+                print_usage(name);
+                return;
+            }
+
+            let input_file = &args[2];
+            let stats = analyse(input_file);
+
+            println!(
+                "Image size is {}x{} => {} bytes ({} KB) can be hidden here",
+                stats.width, stats.height,
+                stats.available_space, stats.available_space / 1024
+            );
         }
         _ => print_usage(name)
     }
